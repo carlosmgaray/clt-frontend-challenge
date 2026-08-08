@@ -5,14 +5,21 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { api } from "@/lib/axios";
 import type { Product } from "@/types/product";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import {
+  addFavorite,
+  removeFavorite,
+  selectIsFavorite,
+} from "@/store/favoritesSlice";
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const dispatch = useAppDispatch();
+  const isFavorite = useAppSelector((state) => selectIsFavorite(state, id));
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isFavorite, setIsFavorite] = useState(false);
 
   const fetchProduct = useCallback(() => {
     api
@@ -77,7 +84,11 @@ export default function ProductDetailPage() {
             </p>
 
             <button
-              onClick={() => setIsFavorite((prev) => !prev)}
+              onClick={() =>
+                dispatch(
+                  isFavorite ? removeFavorite(id) : addFavorite(product)
+                )
+              }
               className="mt-6 w-fit rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-50 dark:hover:bg-zinc-800"
             >
               {isFavorite ? "★ Quitar de favoritos" : "☆ Agregar a favoritos"}
