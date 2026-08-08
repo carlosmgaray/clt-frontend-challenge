@@ -1,8 +1,12 @@
+import Link from "next/link";
 import type { Product } from "@/types/product";
 
 export function ProductCard({ product }: { product: Product }) {
   return (
-    <div className="flex flex-col rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+    <Link
+      href={`/product/${product.id}`}
+      className="flex flex-col rounded-lg border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700"
+    >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={product.thumbnail}
@@ -15,6 +19,6 @@ export function ProductCard({ product }: { product: Product }) {
       <p className="mt-1 text-base font-semibold text-zinc-900 dark:text-zinc-50">
         ${product.price.toFixed(2)}
       </p>
-    </div>
+    </Link>
   );
 }
