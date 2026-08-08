@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { fetchProducts } from "@/store/productsSlice";
+import { fetchProducts, searchProducts } from "@/store/productsSlice";
+import { useDebounce } from "@/hooks/useDebounce";
 import { ProductCard } from "@/components/ProductCard";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 
@@ -11,19 +12,46 @@ export default function Home() {
   const { items, status, error, page, lastAttemptedPage, hasMore } =
     useAppSelector((state) => state.products);
 
+  const [query, setQuery] = useState("");
+  const debouncedQuery = useDebounce(query, 300);
+  const lastHandledQuery = useRef(debouncedQuery);
+  const isSearching = debouncedQuery !== "";
+
   useEffect(() => {
     if (status === "idle") {
       dispatch(fetchProducts({ page: 0 }));
     }
   }, [status, dispatch]);
 
-  const handleRetry = () => dispatch(fetchProducts({ page: lastAttemptedPage }));
+  useEffect(() => {
+    if (lastHandledQuery.current === debouncedQuery) return;
+    lastHandledQuery.current = debouncedQuery;
+
+    if (debouncedQuery === "") {
+      dispatch(fetchProducts({ page: 0 }));
+    } else {
+      dispatch(searchProducts({ query: debouncedQuery }));
+    }
+  }, [debouncedQuery, dispatch]);
+
+  const handleRetry = () =>
+    isSearching
+      ? dispatch(searchProducts({ query: debouncedQuery }))
+      : dispatch(fetchProducts({ page: lastAttemptedPage }));
   const handleLoadMore = () => dispatch(fetchProducts({ page: page + 1 }));
 
   const isInitialLoading = status === "loading" && items.length === 0;
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
+      <input
+        type="text"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Buscar productos..."
+        className="mb-6 w-full rounded-md border border-zinc-300 px-4 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+      />
+
       {isInitialLoading && <LoadingSkeleton />}
 
       {!isInitialLoading && items.length > 0 && (
@@ -46,7 +74,7 @@ export default function Home() {
         </div>
       )}
 
-      {status !== "failed" && !isInitialLoading && items.length > 0 && (
+      {status !== "failed" && !isInitialLoading && !isSearching && items.length > 0 && (
         <div className="mt-8 flex justify-center">
           <button
             onClick={handleLoadMore}

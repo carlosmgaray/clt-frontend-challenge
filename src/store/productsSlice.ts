@@ -34,6 +34,16 @@ export const fetchProducts = createAsyncThunk(
   }
 );
 
+export const searchProducts = createAsyncThunk(
+  "products/searchProducts",
+  async ({ query }: { query: string }) => {
+    const response = await api.get<ProductsResponse>("/products/search", {
+      params: { q: query },
+    });
+    return response.data;
+  }
+);
+
 const productsSlice = createSlice({
   name: "products",
   initialState,
@@ -47,18 +57,40 @@ const productsSlice = createSlice({
       })
       .addCase(fetchProducts.fulfilled, (state, action) => {
         const { products, skip, limit, total } = action.payload;
-        const existingIds = new Set(state.items.map((item) => item.id));
-        const newProducts = products.filter(
-          (product) => !existingIds.has(product.id)
-        );
+        const requestedPage = action.meta.arg.page;
+
+        if (requestedPage === 0) {
+          state.items = products;
+        } else {
+          const existingIds = new Set(state.items.map((item) => item.id));
+          const newProducts = products.filter(
+            (product) => !existingIds.has(product.id)
+          );
+          state.items = state.items.concat(newProducts);
+        }
+
         state.status = "succeeded";
-        state.items = state.items.concat(newProducts);
-        state.page = action.meta.arg.page;
+        state.page = requestedPage;
         state.hasMore = skip + limit < total;
       })
       .addCase(fetchProducts.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.error.message ?? "Failed to fetch products";
+      })
+      .addCase(searchProducts.pending, (state) => {
+        state.status = "loading";
+        state.error = null;
+      })
+      .addCase(searchProducts.fulfilled, (state, action) => {
+        const { products, skip, limit, total } = action.payload;
+        state.status = "succeeded";
+        state.items = products;
+        state.page = 0;
+        state.hasMore = skip + limit < total;
+      })
+      .addCase(searchProducts.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.error.message ?? "Failed to search products";
       });
   },
 });
