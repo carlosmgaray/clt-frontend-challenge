@@ -9,6 +9,7 @@ export interface ProductsState {
   status: ProductsStatus;
   error: string | null;
   page: number;
+  lastAttemptedPage: number;
   hasMore: boolean;
 }
 
@@ -17,6 +18,7 @@ const initialState: ProductsState = {
   status: "idle",
   error: null,
   page: 0,
+  lastAttemptedPage: 0,
   hasMore: true,
 };
 
@@ -38,14 +40,19 @@ const productsSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
-      .addCase(fetchProducts.pending, (state) => {
+      .addCase(fetchProducts.pending, (state, action) => {
         state.status = "loading";
         state.error = null;
+        state.lastAttemptedPage = action.meta.arg.page;
       })
       .addCase(fetchProducts.fulfilled, (state, action) => {
         const { products, skip, limit, total } = action.payload;
+        const existingIds = new Set(state.items.map((item) => item.id));
+        const newProducts = products.filter(
+          (product) => !existingIds.has(product.id)
+        );
         state.status = "succeeded";
-        state.items = state.items.concat(products);
+        state.items = state.items.concat(newProducts);
         state.page = action.meta.arg.page;
         state.hasMore = skip + limit < total;
       })
