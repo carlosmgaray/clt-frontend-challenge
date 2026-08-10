@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { fetchProducts, searchProducts } from "@/store/productsSlice";
+import { fetchProducts, reset, searchProducts } from "@/store/productsSlice";
 import { useDebounce } from "@/hooks/useDebounce";
 import { ProductCard } from "@/components/ProductCard";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
@@ -39,11 +39,20 @@ export default function Home() {
       ? dispatch(searchProducts({ query: debouncedQuery }))
       : dispatch(fetchProducts({ page: lastAttemptedPage }));
   const handleLoadMore = () => dispatch(fetchProducts({ page: page + 1 }));
+  const handleRefresh = () => dispatch(reset());
 
   const isInitialLoading = status === "loading" && items.length === 0;
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
+      <button
+        onClick={handleRefresh}
+        disabled={status === "loading"}
+        className="mb-4 rounded-full bg-foreground px-5 py-2 text-sm font-medium text-background transition-colors hover:bg-[#383838] disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-[#ccc]"
+      >
+        Actualizar
+      </button>
+
       <input
         type="text"
         value={query}
